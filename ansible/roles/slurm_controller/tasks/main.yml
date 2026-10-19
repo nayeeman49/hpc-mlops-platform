@@ -1,0 +1,57 @@
+---
+- name: Record controller services
+  ansible.builtin.set_fact:
+    slurm_restart_services:
+      - slurmdbd
+      - slurmctld
+
+- name: Install the accounting daemon and MariaDB
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - slurmdbd
+    state: present
+    update_cache: true
+
+- name: Enable MariaDB
+  ansible.builtin.systemd:
+    name: mariadb
+    enabled: true
+    state: started
+
+- name: Create the Slurm accounting database
+  ansible.builtin.shell: |
+    set -euo pipefail
+    mariadb -e "CREATE DATABASE IF NOT EXISTS {{ slurm_db_name }};"
+    mariadb -e "CREATE USER IF NOT EXISTS '{{ slurm_db_user }}'@'localhost' IDENTIFIED BY '{{ slurm_db_password }}';"
+    mariadb -e "ALTER USER '{{ slurm_db_user }}'@'localhost' IDENTIFIED BY '{{ slurm_db_password }}';"
+    mariadb -e "GRANT ALL PRIVILEGES ON {{ slurm_db_name }}.* TO '{{ slurm_db_user }}'@'localhost';"
+    mariadb -e "FLUSH PRIVILEGES;"
+  args:
+    executable: /bin/bash
+  no_log: true
+  changed_when: false
+
+- name: Write slurmdbd.conf
+  ansible.builtin.template:
+    src: slurmdbd.conf.j2
+    dest: /etc/slurm/slurmdbd.conf
+    owner: slurm
+    group: slurm
+    mode: "0600"
+  notify: Restart Slurm services
+
+- name: Keep slurmd off the controller
+  ansible.builtin.systemd:
+    name: slurmd
+    enabled: false
+    state: stopped
+
+- name: Enable slurmdbd and slurmctld
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - slurmdbd
+    - slurmctld

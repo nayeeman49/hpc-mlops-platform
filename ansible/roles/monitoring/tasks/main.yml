@@ -1,0 +1,57 @@
+---
+- name: Require a Grafana admin password
+  ansible.builtin.assert:
+    that:
+      - grafana_admin_password | length >= 12
+      - grafana_admin_password != "replace-with-a-lab-password"
+    fail_msg: >-
+      Set grafana_admin_password in ansible/group_vars/gpu.yml to at least 12
+      characters, and use the same value in monitoring/terraform.tfvars.
+
+- name: Check Docker Compose
+  ansible.builtin.command: docker compose version
+  register: docker_compose
+  changed_when: false
+  failed_when: false
+
+- name: Install Docker and the Compose plugin
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+    update_cache: true
+  when: docker_compose.rc != 0
+
+- name: Create the monitoring directory
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write the Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload monitoring stack
+
+- name: Write the Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Reload monitoring stack
+
+- name: Start Prometheus and Grafana
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ monitoring_dir }}"
+  register: compose_up
+  changed_when: compose_up.stdout is search('Started|Created|Recreated') or compose_up.stderr is search('Started|Created|Recreated')

@@ -1,0 +1,9 @@
+---
+slurm_cluster_name: hpc-lab
+nfs_export_path: /srv/hpc
+nfs_mount_path: /mnt/hpc
+nfs_client_cidr: 10.10.0.0/24
+# Libvirt NAT gateway. VMs reach slurmd on the workstation here.
+gpu_node_addr: 10.10.0.1
+gpu_gres_type: rtx4080
+gpu_device: /dev/nvidia0

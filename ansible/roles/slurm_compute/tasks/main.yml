@@ -1,0 +1,20 @@
+---
+- name: Record compute services
+  ansible.builtin.set_fact:
+    slurm_restart_services:
+      - slurmd
+
+- name: Enable slurmd
+  ansible.builtin.systemd:
+    name: slurmd
+    enabled: true
+    state: started
+
+- name: Keep controller daemons off compute nodes
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop:
+    - slurmctld
+    - slurmdbd

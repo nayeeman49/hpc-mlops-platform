@@ -1,0 +1,22 @@
+---
+- name: Install the NFS client
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+    update_cache: true
+
+- name: Create the mount point
+  ansible.builtin.file:
+    path: "{{ nfs_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Mount the head-node export
+  ansible.builtin.mount:
+    src: "{{ groups['controller'][0] }}:{{ nfs_export_path }}"
+    path: "{{ nfs_mount_path }}"
+    fstype: nfs
+    opts: defaults,_netdev
+    state: mounted

@@ -1,0 +1,36 @@
+ClusterName={{ slurm_cluster_name }}
+SlurmctldHost={{ groups['controller'][0] }}
+SlurmUser=slurm
+AuthType=auth/munge
+StateSaveLocation=/var/spool/slurmctld
+SlurmdSpoolDir=/var/spool/slurmd
+SwitchType=switch/none
+MpiDefault=none
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/cgroup
+ReturnToService=2
+SlurmctldPidFile=/run/slurmctld.pid
+SlurmdPidFile=/run/slurmd.pid
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+SlurmdLogFile=/var/log/slurm/slurmd.log
+SlurmctldPort=6817
+SlurmdPort=6818
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageHost={{ groups['controller'][0] }}
+AccountingStoragePort=6819
+GresTypes=gpu
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core_Memory
+SchedulerType=sched/backfill
+
+{% for host in groups['compute'] %}
+NodeName={{ host }} CPUs={{ hostvars[host].ansible_processor_vcpus | default(1) }} RealMemory={{ (hostvars[host].ansible_memtotal_mb | default(1024) | int) - 256 }} State=UNKNOWN
+{% endfor %}
+{% for host in groups['gpu'] %}
+NodeName={{ host }} NodeHostname={{ hostvars[host].ansible_nodename }} NodeAddr={{ gpu_node_addr }} CPUs={{ hostvars[host].ansible_processor_vcpus | default(1) }} RealMemory={{ [(hostvars[host].ansible_memtotal_mb | default(4096) | int) - 4096, 1024] | max }} Gres=gpu:1 State=UNKNOWN
+{% endfor %}
+
+{% if groups['compute'] | length > 0 %}
+PartitionName=cpu Nodes={{ groups['compute'] | join(',') }} Default=YES MaxTime=INFINITE State=UP
+{% endif %}
+PartitionName=gpu Nodes={{ groups['gpu'] | join(',') }} MaxTime=INFINITE State=UP

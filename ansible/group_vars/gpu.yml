@@ -1,0 +1,7 @@
+---
+prometheus_image: prom/prometheus:v3.12.0
+grafana_image: grafana/grafana:12.0.0
+grafana_admin_user: admin
+# Must match monitoring/terraform.tfvars. Replace this before ansible-playbook.
+grafana_admin_password: replace-with-a-lab-password
+monitoring_dir: /opt/hpc-monitoring

@@ -1,0 +1,29 @@
+---
+- name: Record GPU node services
+  ansible.builtin.set_fact:
+    slurm_restart_services:
+      - slurmd
+
+- name: Write gres.conf
+  ansible.builtin.template:
+    src: gres.conf.j2
+    dest: /etc/slurm/gres.conf
+    owner: slurm
+    group: slurm
+    mode: "0644"
+  notify: Restart Slurm services
+
+- name: Enable slurmd
+  ansible.builtin.systemd:
+    name: slurmd
+    enabled: true
+    state: started
+
+- name: Keep controller daemons off the workstation
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop:
+    - slurmctld
+    - slurmdbd

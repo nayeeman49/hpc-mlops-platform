@@ -1,0 +1,12 @@
+DbdHost={{ inventory_hostname }}
+DbdAddr=localhost
+DbdPort=6819
+SlurmUser=slurm
+AuthType=auth/munge
+StorageType=accounting_storage/mysql
+StorageHost=localhost
+StorageUser={{ slurm_db_user }}
+StoragePass={{ slurm_db_password }}
+StorageLoc={{ slurm_db_name }}
+LogFile=/var/log/slurm/slurmdbd.log
+PidFile=/run/slurmdbd.pid

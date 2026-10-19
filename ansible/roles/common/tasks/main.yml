@@ -1,0 +1,30 @@
+---
+- name: Set the VM hostname from the inventory name
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  when: "'gpu' not in group_names"
+
+- name: Install baseline packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - python3
+      - qemu-guest-agent
+    state: present
+    update_cache: true
+  when: "'gpu' not in group_names"
+
+- name: Map lab names to leased addresses
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} hpc-lab"
+    block: |
+      {% for host in groups['slurm'] %}
+      {% if hostvars[host].ansible_host is defined %}
+      {{ hostvars[host].ansible_host }} {{ host }}.{{ lab_domain | default('hpc.lab') }} {{ host }}
+      {% endif %}
+      {% endfor %}
+      {% if 'gpu' not in group_names %}
+      {{ gpu_node_addr }} {{ groups['gpu'][0] }} {{ hostvars[groups['gpu'][0]].ansible_nodename }}
+      {% endif %}

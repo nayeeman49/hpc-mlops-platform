@@ -1,0 +1,48 @@
+---
+- name: Baseline every Slurm node
+  hosts: slurm
+  roles:
+    - common
+
+- name: Export shared data from the head node
+  hosts: controller
+  roles:
+    - nfs_server
+
+- name: Mount shared data
+  hosts: compute:gpu
+  roles:
+    - nfs_client
+
+- name: Install and distribute Munge
+  hosts: slurm
+  roles:
+    - munge
+
+- name: Configure the controller
+  hosts: controller
+  roles:
+    - slurm_common
+    - slurm_controller
+
+- name: Configure CPU compute nodes
+  hosts: compute
+  roles:
+    - slurm_common
+    - slurm_compute
+
+- name: Configure the workstation GPU node
+  hosts: gpu
+  roles:
+    - slurm_common
+    - slurm_gpu
+
+- name: Export host metrics
+  hosts: slurm
+  roles:
+    - node_exporter
+
+- name: Run Prometheus and Grafana on the workstation
+  hosts: gpu
+  roles:
+    - monitoring

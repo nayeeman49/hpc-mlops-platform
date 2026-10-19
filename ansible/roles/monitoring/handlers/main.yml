@@ -1,0 +1,6 @@
+---
+- name: Reload monitoring stack
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ monitoring_dir }}"
+  changed_when: true

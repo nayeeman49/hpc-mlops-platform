@@ -1,0 +1,7 @@
+---
+- name: Restart Slurm services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop: "{{ slurm_restart_services }}"
+  when: slurm_restart_services is defined
